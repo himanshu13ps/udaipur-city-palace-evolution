@@ -1,0 +1,1239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Interactive 3D model of how Udaipur's City Palace grew across four phases, 1559–1930, rebuilt from the City Palace Museum's architectural models, phase panels and site plan.">
+<title>City Palace Evolution</title>
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Mukta:wght@400;500;600&family=Tiro+Devanagari+Hindi&display=swap">
+<style>
+/* Layout: a glass vitrine (the 3D model) with a museum-board placard beside it; a to-scale timeline rail sits under the vitrine. */
+:root{
+  --wall:#ECECE7;        /* museum lime-wash wall */
+  --ink:#1D2040;         /* indigo ink */
+  --ink-2:#4C5070;
+  --ink-3:#767993;
+  --card:#FBFBF8;        /* board paper */
+  --rule:#D9D6CB;
+  --frame:#E39A3B;       /* saffron board frame */
+  --accent:#AE1D3B;      /* board-title crimson */
+  --on-accent:#FFFFFF;
+  --new:#EBAE57;         /* added-in-this-phase tint */
+  --label-ink:#2B3B8E;   /* vitrine label blue */
+  --stage-top:#E7E7E2;
+  --stage-bot:#D3D3CB;
+  --vitrine-edge:#24252D;
+  --chip:rgba(251,251,248,.9);
+  --chip-line:rgba(29,32,64,.12);
+  --glass:rgba(255,255,255,.35);
+  --f-display:"Cormorant Garamond","Cormorant",Garamond,"Times New Roman",serif;
+  --f-body:"Mukta","Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-deva:"Tiro Devanagari Hindi","Mukta","Noto Serif Devanagari",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --wall:#111327; --ink:#ECEBF3; --ink-2:#B9BBD1; --ink-3:#8C8FAA; --card:#191C36; --rule:#2D3156;
+    --frame:#E5A24B; --accent:#F27D93; --on-accent:#191C36; --new:#EDB563; --label-ink:#2B3B8E;
+    --stage-top:#1B1E37; --stage-bot:#0C0E1F; --vitrine-edge:#05060C;
+    --chip:rgba(25,28,54,.88); --chip-line:rgba(236,235,243,.14); --glass:rgba(255,255,255,.06);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --wall:#111327; --ink:#ECEBF3; --ink-2:#B9BBD1; --ink-3:#8C8FAA; --card:#191C36; --rule:#2D3156;
+  --frame:#E5A24B; --accent:#F27D93; --on-accent:#191C36; --new:#EDB563; --label-ink:#2B3B8E;
+  --stage-top:#1B1E37; --stage-bot:#0C0E1F; --vitrine-edge:#05060C;
+  --chip:rgba(25,28,54,.88); --chip-line:rgba(236,235,243,.14); --glass:rgba(255,255,255,.06);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--wall); color:var(--ink);
+  font-family:var(--f-body); font-size:15px; line-height:1.55;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  -webkit-text-size-adjust:100%;
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding-block:14px 32px;max-width:1520px;margin:0 auto}
+
+/* Masthead */
+.masthead{display:grid;gap:4px;min-width:0}
+.eyebrow{margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:500}
+.masthead h1{margin:0;font-family:var(--f-display);font-style:italic;font-weight:600;font-size:clamp(26px,5.2vw,36px);line-height:1.05;text-wrap:balance;letter-spacing:-.005em}
+.deck{margin:2px 0 0;color:var(--ink-2);max-width:62ch;font-size:14.5px}
+
+/* Vitrine stage */
+.stage{
+  position:relative;min-width:0;height:clamp(330px,64vh,620px);height:clamp(330px,64svh,620px);
+  border-radius:4px;overflow:hidden;isolation:isolate;
+  background:linear-gradient(180deg,var(--stage-top),var(--stage-bot));
+  box-shadow:0 0 0 1.5px var(--vitrine-edge), 0 18px 40px -24px rgba(10,12,30,.45);
+  touch-action:none;
+}
+.stage::after{ /* glass glare */
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:3;
+  background:linear-gradient(115deg,var(--glass) 0%,transparent 22%,transparent 70%,var(--glass) 100%);
+}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#gl:active{cursor:grabbing}
+
+.hud{position:absolute;z-index:4;display:flex;gap:6px;align-items:center}
+.hud-tl{top:10px;left:10px;right:10px;pointer-events:none}
+.hud-tl>*{pointer-events:auto}
+.hud-bl{left:10px;bottom:10px;flex-wrap:wrap}
+.hud-br{right:10px;bottom:10px;flex-direction:column;align-items:flex-end;gap:8px}
+
+.seg{display:inline-flex;background:var(--chip);border:1px solid var(--chip-line);border-radius:999px;padding:2px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.seg button{border:0;background:none;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--ink-2);cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--chip-line);background:var(--chip);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:500;color:var(--ink-2);cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.chip[aria-pressed="false"] .sw{opacity:.35}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;flex:none}
+.sw-new{background:var(--new);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+
+.north{width:34px;height:34px;border-radius:50%;background:var(--chip);border:1px solid var(--chip-line);display:grid;place-items:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.north svg{width:24px;height:24px;transition:none}
+.scale{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.scale .bar{display:block;height:6px;border:1.5px solid var(--ink-2);border-top:0;width:60px}
+
+.hint{position:absolute;left:50%;top:52px;transform:translateX(-50%);z-index:4;margin:0;font-size:12px;color:var(--ink-2);background:var(--chip);border:1px solid var(--chip-line);padding:3px 10px;border-radius:999px;white-space:nowrap;pointer-events:none;transition:opacity .4s}
+.hint.gone{opacity:0}
+
+/* Tent card inside the vitrine, after the museum's own labels */
+.tent{position:absolute;top:12px;right:16px;z-index:4;width:230px;padding:9px 12px 10px;background:#FCFCFA;color:var(--label-ink);
+  text-align:center;font-family:var(--f-display);line-height:1.15;transform:rotate(-3.5deg);transform-origin:top right;
+  box-shadow:0 0 0 1px rgba(43,59,142,.25), inset 0 0 0 3px #FCFCFA, inset 0 0 0 4px rgba(43,59,142,.35), 0 8px 18px -10px rgba(0,0,0,.35)}
+.tent b{display:block;font-weight:600;font-size:17px}
+.tent span{display:block;font-style:italic;font-size:12px;margin-top:2px}
+.tent em{display:block;font-weight:600;font-size:15px;margin-top:3px;font-style:normal}
+
+/* 3D labels */
+.pins{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.pin{position:absolute;left:0;top:0;width:0;height:0;padding:0;border:0;background:none;pointer-events:auto;cursor:pointer}
+.pin .lab{position:absolute;bottom:13px;left:0;transform:translateX(-50%);white-space:nowrap;font-size:12px;font-weight:500;line-height:1;color:var(--ink);
+  background:var(--chip);border:1px solid var(--chip-line);padding:5px 8px 4px;border-radius:3px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.pin .stem{position:absolute;left:-.5px;bottom:2px;width:1px;height:11px;background:var(--ink-2);opacity:.7}
+.pin .dot{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:var(--ink-2);box-shadow:0 0 0 2px var(--chip)}
+.pin.is-new .dot{background:var(--new)}
+.pin.is-sel .lab{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.pin.is-sel .dot{background:var(--accent)}
+.pin.compact .lab,.pin.compact .stem{display:none}
+.pin:focus-visible{outline:none}
+.pin:focus-visible .lab,.pin.compact:focus-visible .dot{outline:2px solid var(--accent);outline-offset:2px}
+.pin.compact .dot{left:-6px;top:-6px;width:12px;height:12px}
+
+/* Selection card */
+.sel{position:absolute;left:10px;right:10px;bottom:10px;z-index:5;max-width:440px;background:var(--card);color:var(--ink);
+  padding:12px 40px 13px 14px;border:1px solid var(--rule);box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--frame) 45%,transparent),0 14px 30px -18px rgba(0,0,0,.5)}
+.sel-meta{margin:0;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.sel-name{margin:2px 0 4px;font-family:var(--f-display);font-style:italic;font-weight:600;font-size:22px;line-height:1.1;color:var(--accent)}
+.sel-text{margin:0;font-size:14px;color:var(--ink-2);max-width:60ch}
+.sel-x{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:1px solid var(--rule);background:var(--card);cursor:pointer;display:grid;place-items:center}
+.sel-x svg{width:12px;height:12px}
+
+.nogl{position:absolute;inset:0;z-index:6;display:grid;place-items:center;padding:24px;text-align:center;color:var(--ink-2)}
+.nogl p{max-width:34ch;margin:0}
+
+/* Timeline */
+.timeline{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.play{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--rule);background:var(--card);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.play svg{width:16px;height:16px}
+.track{flex:1;min-width:0;display:grid;gap:4px}
+.rail-row{display:flex;align-items:stretch;gap:6px}
+.rail{flex:1;min-width:0;display:flex;height:44px;border:1px solid var(--rule);background:var(--card)}
+.rail button{flex-shrink:1;flex-basis:0;min-width:0;border:0;border-right:1px solid var(--rule);background:none;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;padding:0 8px;text-align:left;color:var(--ink-2);overflow:hidden}
+.rail button:last-child{border-right:0}
+.rail .no{font-family:var(--f-display);font-weight:600;font-size:21px;line-height:1;color:var(--ink)}
+.rail .yr{font-size:11px;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.rail button[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
+.rail button[aria-selected="true"] .no{color:var(--on-accent)}
+.rail-end{align-self:center;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.axis{position:relative;height:14px;margin-right:38px}
+.axis span{position:absolute;top:0;transform:translateX(-50%);font-size:10px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.axis span::before{content:"";position:absolute;left:50%;top:-5px;width:1px;height:4px;background:var(--ink-3)}
+
+/* Placard, after the museum's phase boards */
+.placard{min-width:0;display:grid;gap:14px;align-content:start}
+.board{background:var(--card);border:1px solid var(--rule);padding:22px 20px 20px;
+  box-shadow:inset 0 0 0 6px color-mix(in srgb,var(--frame) 55%,transparent)}
+.board>*{margin:0}
+.b-phase{font-family:var(--f-display);font-style:italic;font-weight:500;font-size:19px;color:var(--ink-2)}
+.b-title{font-family:var(--f-display);font-style:italic;font-weight:600;font-size:31px;line-height:1.05;color:var(--accent);margin-top:2px;text-wrap:balance}
+.b-hindi{font-family:var(--f-deva);font-size:18px;color:var(--ink-2);margin-top:6px;line-height:1.4}
+.orn{display:block;width:120px;height:12px;color:var(--accent);margin-top:10px}
+.b-years{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin-top:10px;padding-block:8px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.b-years strong{color:var(--ink);font-weight:600}
+.b-sub{font-family:var(--f-display);font-weight:600;font-size:20px;margin-top:16px;line-height:1.2}
+.board p.body{margin-top:8px;max-width:64ch;color:var(--ink-2)}
+.b-h{margin-top:18px !important;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.added{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:2px}
+.added button{width:100%;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;gap:10px;border:0;background:none;padding:7px 6px;text-align:left;cursor:pointer;border-radius:3px}
+.added button:hover{background:color-mix(in srgb,var(--frame) 14%,transparent)}
+.added .nm{font-weight:500;color:var(--ink)}
+.added .mt{font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap}
+.added .sw{transform:translateY(1px)}
+.rulers{margin:8px 0 0;display:grid;gap:0}
+.rulers div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px dotted var(--rule)}
+.rulers dt{color:var(--ink)}
+.rulers dd{margin:0;color:var(--ink-3);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.also{margin-top:8px !important;color:var(--ink-2);font-size:14px}
+.epi{margin-top:18px !important;padding-top:14px;border-top:1px solid var(--rule)}
+.epi h4{margin:0;font-family:var(--f-display);font-style:italic;font-weight:600;font-size:20px;color:var(--accent)}
+.epi p{margin:6px 0 0;color:var(--ink-2);font-size:14px}
+.notes{font-size:12.5px;color:var(--ink-3);padding:0 2px}
+.notes p{margin:0 0 6px}
+.notes h4{margin:0 0 4px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600}
+.notes ul{margin:0;padding-left:18px}
+.notes a{color:var(--ink-2)}
+.board.swap{animation:swap .45s ease}
+@keyframes swap{from{opacity:.25;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+@media (max-width:699px){ .tent{display:none} .hint{top:50px} }
+@media (max-width:380px){ .seg button{padding:5px 8px;font-size:12px} }
+@media (min-width:980px){
+  body{overflow:hidden}
+  .app{height:100%;grid-template-columns:minmax(0,1fr) 400px;grid-template-rows:auto minmax(0,1fr) auto;gap:12px 22px;padding-block:16px}
+  .masthead{grid-column:1;grid-row:1}
+  .stage{grid-column:1;grid-row:2;height:auto;min-height:0}
+  .timeline{grid-column:1;grid-row:3}
+  .placard{grid-column:2;grid-row:1/4;overflow:auto;min-height:0;padding-right:4px;padding-bottom:8px}
+}
+@media (prefers-reduced-motion: reduce){ .board.swap{animation:none} .hint{transition:none} }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="masthead">
+    <p class="eyebrow">City Palace Museum · Udaipur</p>
+    <h1>Architectural Evolution of the City Palace</h1>
+    <p class="deck">The museum’s four models, rebuilt in 3D. Step through the phases to watch the palace spread along its ridge above Lake Pichola, 1559 to 1930.</p>
+  </header>
+
+  <section class="stage" id="stage" aria-label="3D model of the City Palace complex">
+    <canvas id="gl" aria-hidden="true"></canvas>
+    <div class="pins" id="pins"></div>
+
+    <div class="hud hud-tl">
+      <div class="seg" role="group" aria-label="Viewpoint">
+        <button type="button" data-view="model" aria-pressed="true">Model</button>
+        <button type="button" data-view="east" aria-pressed="false">East face</button>
+        <button type="button" data-view="lake" aria-pressed="false">Lake front</button>
+        <button type="button" data-view="plan" aria-pressed="false">Plan</button>
+      </div>
+    </div>
+
+    <div class="tent" id="tent" aria-hidden="true"><b>Model 1</b><span>Architectural Evolution of The City Palace Complex, Udaipur</span><em>Mewar Mature Phase 16th Century</em></div>
+
+    <div class="hud hud-bl">
+      <button type="button" class="chip" id="tNew" aria-pressed="true" title="Tint buildings added in the current phase"><i class="sw sw-new"></i>Mark new</button>
+      <button type="button" class="chip" id="tLabels">Labels: new</button>
+    </div>
+    <div class="hud hud-br">
+      <div class="scale" id="scale" hidden><span class="bar" id="scaleBar"></span><span id="scaleTxt">50 m</span></div>
+      <div class="north" title="North arrow"><svg id="northSvg" viewBox="-12 -12 24 24" aria-label="North"><path d="M0 -10 L4.2 3 L0 0.6 L-4.2 3 Z" fill="currentColor"/><text x="0" y="10.5" text-anchor="middle" font-size="7" font-weight="600" fill="currentColor" font-family="Mukta, sans-serif">N</text></svg></div>
+    </div>
+
+    <p class="hint" id="hint">Drag to turn · pinch or scroll to zoom · tap a building</p>
+
+    <div class="sel" id="sel" hidden>
+      <button type="button" class="sel-x" id="selX" aria-label="Close details"><svg viewBox="0 0 12 12"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <p class="sel-meta" id="selMeta"></p>
+      <h3 class="sel-name" id="selName"></h3>
+      <p class="sel-text" id="selText"></p>
+    </div>
+    <div class="nogl" id="nogl" hidden><p>The 3D model needs WebGL, which this browser has switched off. The phase notes still work.</p></div>
+  </section>
+
+  <nav class="timeline" aria-label="Phases of construction">
+    <button type="button" class="play" id="play" aria-label="Play through the phases">
+      <svg id="playIcon" viewBox="0 0 16 16"><path d="M4 2.5L13 8L4 13.5Z" fill="currentColor"/></svg>
+    </button>
+    <div class="track">
+      <div class="rail-row">
+        <div class="rail" id="rail" role="tablist" aria-label="Phase">
+          <button type="button" role="tab" data-p="1" style="flex-grow:61"><span class="no">1</span><span class="yr">1559</span></button>
+          <button type="button" role="tab" data-p="2" style="flex-grow:78"><span class="no">2</span><span class="yr">1620</span></button>
+          <button type="button" role="tab" data-p="3" style="flex-grow:80"><span class="no">3</span><span class="yr">1698</span></button>
+          <button type="button" role="tab" data-p="4" style="flex-grow:152"><span class="no">4</span><span class="yr">1778</span></button>
+        </div>
+        <span class="rail-end">1930</span>
+      </div>
+      <div class="axis" aria-hidden="true">
+        <span style="left:11.05%">1600</span><span style="left:38%">1700</span><span style="left:64.96%">1800</span><span style="left:91.91%">1900</span>
+      </div>
+    </div>
+  </nav>
+
+  <aside class="placard">
+    <article class="board" id="board" aria-live="polite"></article>
+    <section class="notes">
+      <h4>How this was made</h4>
+      <p>Built from photographs of the four architectural models, the phase panels, the site plan and the lake-front painting in the City Palace Museum. Massing is simplified and positions are approximate; one model unit is about 3 m, so the real east front of about 244 m spans roughly 80 units.</p>
+      <h4>Dates checked against</h4>
+      <ul>
+        <li><a href="https://en.wikipedia.org/wiki/City_Palace,_Udaipur" target="_blank" rel="noopener">City Palace, Udaipur (Wikipedia)</a>: Badi Pol 1600, Tripolia 1725, the 27 m rock, elephant contests in Manek Chowk</li>
+        <li><a href="https://en.wikipedia.org/wiki/Shambhu_Niwas" target="_blank" rel="noopener">Shambhu Niwas (Wikipedia)</a> and <a href="https://en.wikipedia.org/wiki/Shiv_Niwas_Palace" target="_blank" rel="noopener">Shiv Niwas Palace (Wikipedia)</a></li>
+        <li><a href="https://prod.incredibleindia.gov.in/content/incredible-india-v2/en/destinations/udaipur/listicles/a-day-in-udaipur.html" target="_blank" rel="noopener">Incredible India</a>: Jag Niwas, 1743–46</li>
+        <li><a href="https://www.bindugopalrao.com/royal-vacation-fateh-prakash-palace-udaipur/" target="_blank" rel="noopener">Bindu Gopal Rao</a>: Durbar Hall foundation stone, 1909</li>
+        <li><a href="https://savaari.com/blog/palaces-of-udaipur/" target="_blank" rel="noopener">Savaari</a>: Crystal Gallery and Sajjan Singh</li>
+        <li><a href="https://www.lonelyplanet.com/pois/449487" target="_blank" rel="noopener">Lonely Planet</a>: facade length</li>
+      </ul>
+    </section>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ------------------------------------------------------------------ data */
+const PHASES = [
+  { n:1, en:'Mewar Mature Phase', hi:'मेवाड़ परिपक्वता चरण', years:'1559–1620', model:'Model 1', century:'16th century',
+    vitrine:'Mewar Mature Phase 16th Century', sub:'Beginnings of the Palace',
+    body:[
+      'The palace begins at Rai Angan, the private courtyard of Maharana Udai Singh II. The museum calls it the genius loci of the City Palace and of Udaipur itself; every later court grows out from it.',
+      'Builders followed the Kumbha Mahals at Kumbhalgarh and Chittorgarh: heavy masonry and thick walls, vaulted substructures, carved temple-style columns and beams, and round domes with a lotus finial. Stone chhajjas rest on carved brackets. Badi Pol, still the main northern entrance, also dates from this phase.'
+    ],
+    rulers:[['Udai Singh II','1537–1572'],['Pratap I','1572–1597'],['Amar Singh I','1597–1620']] },
+  { n:2, en:'Mewar Mughal Early Phase', hi:'मेवाड़ मुगल का शुरुआती दौर', years:'1620–1698', model:'Model 2', century:'17th century',
+    vitrine:'Mewar Mughal Early Phase 17th Century', sub:'The Alliance and New Constructions',
+    body:[
+      'Peace with the Mughals brought steady growth and the first Mughal ideas, blended with older Mewar forms. Karan Singh built Chandra Mahal as a royal leisure space and Karan Mahal on the axis of Rai Angan, looking west over Lake Pichola.',
+      'Manek Chowk became the palace’s largest public courtyard and its ceremonial ground for centuries. Mor Chowk was laid out as a durbar court, with Manek Mahal to its north and Surya Chopad to its south, and Lakshmi Chowk was added as the heart of the zenana.'
+    ],
+    rulers:[['Karan Singh','1620–1628'],['Jagat Singh I','1628–1652'],['Raj Singh I','1653–1680'],['Jai Singh','1680–1698']] },
+  { n:3, en:'Mewar Mughal Mature Phase', hi:'मेवाड़ मुगल परिपक्वता चरण', years:'1698–1778', model:'Model 3', century:'18th century',
+    vitrine:'Mewar Mughal Mature Phase 18th Century', sub:'Blending of the Mewar and Mughal Ideas',
+    body:[
+      'By the 18th century Mughal planning and geometry were fully absorbed into the Mewar style. The skyline changed more in this phase than in any other, as large foliated domes and new courtyards branched out from Rai Angan.',
+      'Amar Singh II built Baadi Mahal, a colonnaded court round a char-bagh garden high on the natural rock. Sangram Singh II added Badi Chitrashali to the mardana, the Chowmukha went up at the south end of Lakshmi Chowk, and Badi Pol gained two octagonal domed towers. Tripolia, the triple-arched gate into Manek Chowk, is dated 1725.'
+    ],
+    rulers:[['Amar Singh II','1698–1710'],['Sangram Singh II','1710–1734'],['Jagat Singh II','1734–1751'],['Pratap Singh II','1751–1754'],['Raj Singh II','1754–1761'],['Ari Singh II','1761–1773'],['Hamir Singh II','1773–1778']] },
+  { n:4, en:'Mewar-British Phase', hi:'मेवाड़–ब्रिटिश का चरण', years:'1778–1930', model:'Model 4', century:'19th–20th century',
+    vitrine:'Mewar British Phase 19th to 20th Century', sub:'British Influences and City Development',
+    body:[
+      'Mewar’s alliance with the East India Company brought British ideas of planning into the existing styles, seen in additions to Mor Chowk and new rooms in the Zenana Mahal, along with European glass and enamel work in older interiors.',
+      'The three main buildings of the period, Shambhu Niwas, Shiv Niwas and Fateh Prakash, were built as independent residences and guest-houses with little connection to the old palace. Under Fateh Singh the city gained schools, railway lines and the Fateh Sagar lake.'
+    ],
+    rulers:[['Bhim Singh','1778–1828'],['Jawan Singh','1828–1838'],['Sardar Singh','1838–1842'],['Swarup Singh','1842–1861'],['Shambhu Singh','1861–1874'],['Sajjan Singh','1874–1884'],['Fateh Singh','1884–1930']],
+    extra:'<h4 class="b-h">Also named on the phase 4 drawing</h4><p class="also">Bhupal Prakash and Bhupal Vilas, Pitam Niwas, Naya Darikhana, Bhim Vilas, Khush Mahal, Ganesh Mandir, Surya Prakash and Swarup Vilas.</p>' +
+      '<div class="epi"><h4>After 1930</h4><p>The palace stayed the royal residence until 1955 and housed state government offices from 1955 to 1969. Maharana Bhagwat Singh then set up the Maharana of Mewar Charitable Foundation to turn its main parts into a public museum. The museum covers 26,620 m² of a 28,871 m² built area.</p></div>' }
+];
+
+/* ------------------------------------------------------------- terrain */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function ss(e0,e1,x){ const t=clamp((x-e0)/(e1-e0),0,1); return t*t*(3-2*t); }
+function g2(dx,dz,sx,sz){ return Math.exp(-(dx*dx/(2*sx*sx)+dz*dz/(2*sz*sz))); }
+function bump(x,a,b,e){ return ss(a-e,a+e,x)*ss(b+e,b-e,x); }
+function rectMask(x,z,x0,x1,z0,z1,e){ return ss(x0-e,x0+e,x)*ss(x1+e,x1-e,x)*ss(z0-e,z0+e,z)*ss(z1+e,z1-e,z); }
+function shoreZ(x){ return -20.5 - 9.5*bump(x,2,50,7) - 2*bump(x,-30,2,5) - 5*bump(x,-125,-84,6) + 0.8*Math.sin(x*0.13); }
+// x runs south (-) to north (+); z runs west (lake, -) to east (city, +); 1 unit ≈ 3 m
+function ground(x,z){
+  let h=0.8;
+  h+=0.6*ss(29,25,z);
+  h+=1.2*ss(13,10.5,z);
+  h+=1.4*ss(0.5,-3.5,z);
+  h+=5.0*g2(x-31,z+11,8.5,6);
+  h+=0.5*g2(x-15,z+11,7,6);
+  h+=1.2*g2(x+62,z+3,14,12);
+  h-=0.8*g2(x+18,z+10,13,8);
+  const mk=rectMask(x,z,-1,44,-2,11.5,1.0); h+=(2.6-h)*mk;
+  const lt=rectMask(x,z,-2,46,12.8,25,1.0); h+=(1.4-h)*lt;
+  const sb=ss(-76,-88,x); h+=(1.6-h)*sb;
+  const sh=shoreZ(x); const t=ss(sh-1.5,sh+4.5,z);
+  return -1.8+(h+1.8)*t;
+}
+const BX0=-122,BX1=72,BZ0=-78,BZ1=44;
+
+/* --------------------------------------------------------- structures */
+const S=[];
+function def(o){ S.push(Object.assign({p1:5,label:false,list:true},o)); }
+
+// Phase 1 ------------------------------------------------------------
+def({id:'enclosure',name:'Fortified enclosure',p0:1,label:true,at:[0,0],y:0,anchor:[-62,6.5,28],short:'16th c.',
+  meta:'First phase',text:'A crenellated wall ringed the hillside. The first model shows it enclosing the slopes south and east of the early palace, with corner bastions and a gate at the south-east corner.',
+  noFp:true,
+  build(b){
+    const H=2.2,T=0.9;
+    b.wall(-78,28,56,28,H,T); b.wall(56,28,56,-19,H,T); b.wall(-78,-19,-78,28,H,T);
+    for(const [x,z] of [[-78,28],[56,28],[-78,-19],[56,-19],[-12,28],[22,28]]){ const g=ground(x,z); b.box(x,g-1.5,z,2.6,H+2.6,2.6); b.merlonsRect(x,z,2.6,2.6,g+H+1.1); }
+    const gz=21,gg=ground(-78,gz); b.block(-78,gz,3.4,3.6,4.4,{y0:gg,floors:2,faces:{n:'g',s:'g',e:'',w:''},plinth:2});
+  }});
+def({id:'westwall',name:'Lakeside wall',p0:1,p1:4,at:[0,0],y:0,noFp:true,
+  build(b){ b.wall(-78,-19,-6,-19.5,2.0,0.8); }});
+def({id:'badipol',name:'Badi Pol',p0:1,label:true,at:[56,12],y:'g',short:'1600',
+  meta:'Built 1600',text:'The Great Gate. Built in the first phase, it is still the main northern entrance to the City Palace.',
+  build(b){ b.block(0,0,3.6,5.4,5,{floors:2,faces:{n:'g',s:'g',e:'u',w:'u'},plinth:3}); b.chhatri(0,5,-1.8,1.2); b.chhatri(0,5,1.8,1.2); b.jharokha(1.8,3.5,0,Math.PI/2,1.1); }});
+def({id:'suraj',name:'Gate at the Suraj Pol site',p0:1,label:true,at:[-1,11.5],y:'g',short:'First phase',
+  meta:'First phase',text:'The museum’s phase 1 drawing marks an earlier gate on the site of today’s Suraj Pol, at the south end of Manek Chowk.',
+  build(b){ b.block(0,0,3,3,4.4,{floors:2,faces:{e:'g',w:'g',n:'u',s:'u'},plinth:3}); b.dome(0,4.4,0,1.0,'round'); }});
+def({id:'manekwall',name:'Manek Chowk east wall',p0:1,at:[21.5,11.5],y:0.3,noFp:true,
+  build(b){
+    b.box(0,0,0,41,3.1,1.6);
+    b.merlonsLine(-20.4,0.62,20.4,0.62,3.1,0.28);
+    for(let x=-19.5;x<=19.6;x+=2.6) b.arch(x,1.15,0.82,0,1.3,1.5);
+  }});
+def({id:'raiangan',name:'Rai Angan',p0:1,label:true,at:[15,-11],y:6.0,short:'from 1559',
+  meta:'Maharana Udai Singh II · from 1559',text:'The founder’s private courtyard, where the palace begins. The Nauchowki Mahal faces into it, and the museum’s drawing places the Sabha, Salehkhana and Kothar around it.',
+  build(b){
+    b.court(0,0,10,14,2.6,6,{floors:2,outer:'w',inner:'a',floor:'paving',plinth:4});
+    for(const [x,z] of [[-3.7,-5.7],[3.7,-5.7],[-3.7,5.7],[3.7,5.7]]) b.chhatri(x,6,z,1.4,'round');
+    b.dome(0,6,-5.7,1.5,'round');
+    b.jharokha(0,3.4,7,0,1.3);
+  }});
+def({id:'amar',name:'Amar Mahal & Bhandar Chowk',p0:1,label:true,at:[-2.5,-10],y:3.9,short:'First phase',
+  meta:'First phase',text:'Domed rooms of the first palace. The museum shows Amar Mahal facing Bhandar Chowk; with Rai Angan and the Nauchowki Mahal they are its examples of the early Mewar style.',
+  build(b){
+    b.block(0,0,7,10,6.5,{floors:3,plinth:4});
+    for(const [x,z] of [[-1.8,-2.6],[1.8,-2.6],[-1.8,2.6],[1.8,2.6]]) b.dome(x,6.5,z,1.15,'round');
+    b.jharokha(0,3.3,5,0,1.1);
+    const gy=b.gy(8,1);
+    b.block(8,1,9,6,3.2,{y0:gy,floors:1,plinth:3,faces:{e:'a',w:'w',n:'',s:''}});
+    const cy=b.gy(8,6.75);
+    b.box(8,cy-1.5,6.75,7,2.1,3.4,'stone');
+    b.box(8,cy+0.6,6.75,6.6,0.08,3.0,'tile');
+    for(const t of [-2.2,0,2.2]) b.box(8+t,cy+0.68,6.75,0.09,0.05,3.0);
+    b.box(8,cy+0.68,6.75,6.6,0.05,0.09);
+  }});
+def({id:'northrange',name:'North range',p0:1,at:[46,-5],y:'g',
+  build(b){ b.block(0,0,8,4,3,{floors:1,faces:{e:'a',w:'w',n:'w',s:'w'},plinth:3}); b.chhatri(-3,3,0,1.1); }});
+def({id:'rockwall',name:'Rock wall',p0:1,at:[0,0],y:0,noFp:true,
+  build(b){ b.wall(20.5,-1.2,42,-1.2,1.5,0.7); b.wall(42,-1.2,42,-3.4,1.5,0.7); }});
+def({id:'rock',name:'Natural rock',p0:1,p1:3,label:true,list:false,at:[31,-11],y:0,anchor:[31,10.2,-11],noFp:true,
+  meta:'About 27 m high',text:'The ridge the palace grew along. Its highest point, a natural rock about 27 m high, stays open in the first two models; Baadi Mahal is built on top of it in the 18th century.'});
+
+// Phase 2 ------------------------------------------------------------
+def({id:'zenana',name:'Zenana Mahal & Lakshmi Chowk',p0:2,label:true,at:[-18.5,-10],y:3.6,short:'Second phase',
+  meta:'Second phase',text:'The queens’ palace, a long range of rooms round Lakshmi Chowk, which the museum calls the heart of the zenana. Its east front carries the row of small domes that marks the southern skyline.',
+  build(b){
+    b.court(0,0,25,16,3.2,5,{floors:2,outer:'w',inner:'a',floor:'paving',plinth:4});
+    for(let i=0;i<9;i++) b.chhatri(-10.8+i*2.7,5,6.4,1.05,'round');
+    for(const x of [-10.9,10.9]) b.chhatri(x,5,-6.4,1.5,'round');
+    for(const x of [-6,0,6]) b.jharokha(x,2.9,8,0,1.0);
+    b.arch(9.6,0.05,8.04,0,1.6,2.4);
+  }});
+def({id:'karan',name:'Karan Mahal',p0:2,label:true,at:[16,-22.5],y:4.1,short:'1620–1628',
+  meta:'Maharana Karan Singh · 1620–1628',text:'One of the largest buildings of the phase, set on the axis of Rai Angan to its west and looking out over Lake Pichola.',
+  build(b){
+    b.block(0,0,12,9,5.5,{floors:3,plinth:5});
+    for(const x of [-3.6,0,3.6]) b.jharokha(x,2.4,-4.5,Math.PI,1.1);
+    b.chhatri(-5,5.5,-3.4,1.3); b.chhatri(5,5.5,-3.4,1.3); b.dome(0,5.5,0.6,1.6,'round');
+  }});
+def({id:'mor',name:'Mor Chowk',p0:2,label:true,at:[15,-2],y:4.0,short:'Second phase',
+  meta:'Second phase',text:'Laid out as a durbar court, with Manek Mahal to its north and Surya Chopad to its south. This front range faces Manek Chowk.',
+  build(b){
+    b.block(0,0,10,4,6.5,{floors:3,faces:{e:'w',n:'w',s:'w',w:''},plinth:4});
+    b.arch(0,0.05,2.03,0,1.8,3.0);
+    b.jharokha(-3,3.9,2,0,1.1); b.jharokha(3,3.9,2,0,1.1);
+    for(const x of [-4.2,4.2]) b.chhatri(x,6.5,-1.1,1.1);
+  }});
+def({id:'manek2',name:'Manek Chowk',p0:2,p1:3,label:true,at:[21.5,5.5],y:1.0,short:'Second phase',
+  meta:'Second phase',text:'Became the largest public courtyard of the palace and, for centuries, its ceremonial ground for the royal family and the people of the city.',
+  build(b){ b.box(0,0,0,45,1.68,11,'earth'); }});
+def({id:'arcades',name:'Lower-terrace arcades',p0:2,p1:4,label:true,at:[21.5,18.5],y:1.4,short:'Second phase',
+  meta:'Second phase',text:'Long arcaded ranges on the terrace below Manek Chowk. The museum’s present-day site plan marks this strip as the Paiga (stables) and shops.',
+  build(b){
+    for(const cx of [-11,11.5]){
+      b.block(cx,-2,20,2.4,2.4,{floors:1,faces:{e:'A',w:'A',n:'',s:''},plinth:2,merlons:false});
+      b.block(cx,2.6,20,1.8,1.9,{floors:1,faces:{e:'A',w:'',n:'',s:''},plinth:2,merlons:false});
+    }
+  }});
+def({id:'southpav',name:'Hilltop pavilion',p0:2,p1:4,at:[-63,-2],y:5.1,
+  build(b){
+    b.box(0,-2,0,10.5,2.4,10.5,'stone');
+    b.court(0,0,9,9,1.5,2.4,{y0:0.4,floors:1,outer:'w',inner:'a',floor:'paving',plinth:1});
+    for(const [x,z] of [[-3.75,-3.75],[3.75,-3.75],[-3.75,3.75],[3.75,3.75]]) b.chhatri(x,2.8,z,1.5);
+  }});
+def({id:'lakeyard',name:'Lakeside yard',p0:2,p1:4,at:[44.2,-21],y:5.0,
+  build(b){ b.court(0,0,14,13,1.0,3.6,{floors:1,outer:'',inner:'',floor:'earth',plinth:5}); }});
+
+// Phase 3 ------------------------------------------------------------
+def({id:'baadi',name:'Baadi Mahal',p0:3,label:true,at:[31,-11],y:9.3,short:'1698–1710',
+  meta:'Maharana Amar Singh II · 1698–1710',text:'A courtyard with a covered, colonnaded verandah round a Mughal-style char-bagh garden of flowering shrubs, trees, a water basin, fountains and arched pavilions. It sits on the natural rock, and the museum’s section shows the Persian water wheels (rahat) that lifted water up to it.',
+  build(b){
+    b.court(0,0,12,12,2.4,3.4,{floors:1,outer:'w',inner:'A',floor:null,plinth:5.2});
+    b.box(0,-0.4,0,7.3,0.5,7.3,'lawn');
+    b.box(0,0.1,0,7.3,0.04,0.7,'paving'); b.box(0,0.1,0,0.7,0.04,7.3,'paving');
+    b.box(0,0.1,0,2.0,0.12,2.0,'stone'); b.box(0,0.14,0,1.6,0.12,1.6,'water');
+    for(const [x,z] of [[-4.8,-4.8],[4.8,-4.8],[-4.8,4.8],[4.8,4.8]]) b.octTower(x,z,0,1.0,4.2,{kind:'onion',plinth:5.2});
+    for(const [x,z] of [[0,-2.85],[0,2.85],[-2.85,0],[2.85,0]]) b.chhatri(x,0.14,z,1.0,'onion');
+  }});
+def({id:'chitrashali',name:'Badi Chitrashali',p0:3,label:true,at:[22.5,-9],y:7.7,short:'1710–1734',
+  meta:'Maharana Sangram Singh II · 1710–1734',text:'A new courtyard added to the mardana, the men’s palace, between Baadi Mahal and the older courts.',
+  build(b){
+    b.court(0,0,5,10,1.5,4.6,{floors:2,outer:'w',inner:'a',floor:'paving',plinth:4});
+    b.chhatri(0,4.6,-4.2,1.2,'onion'); b.chhatri(0,4.6,4.2,1.2,'onion');
+  }});
+def({id:'burj',name:'Kanch & Chitram ki Burj',p0:3,label:true,at:[15,-2],y:4.0,short:'Third phase',
+  meta:'Third phase',text:'Large foliated domes and new upper storeys changed the whole skyline in this phase. The museum’s drawing names the Kanch ki Burj and Chitram ki Burj towers and the dome over the Kachari Mahal.',
+  build(b){
+    for(const [x,r,h] of [[-4.9,1.1,9.2],[4.9,1.1,9.2],[-1.95,0.75,8.2],[1.95,0.75,8.2]]) b.octTower(x,2.1,0,r,h,{kind:'onion',plinth:2});
+    b.block(0,0.3,7,2.8,2.0,{y0:6.5,plinth:0,floors:1,faces:{e:'w',n:'w',s:'w',w:''}});
+    for(const x of [-2.6,0,2.6]) b.chhatri(x,8.5,0.3,1.05,'onion');
+    b.block(0,-3.4,8,2.4,2.2,{y0:8.0,plinth:0,floors:1});
+    b.dome(0,10.2,-3.4,1.5,'onion');
+  }});
+def({id:'chowmukha',name:'Chowmukha',p0:3,label:true,at:[-25.5,-10],y:3.6,short:'Third phase',
+  meta:'Third phase',text:'A pavilion at the south end of Lakshmi Chowk where the royal women held their own durbar. The 18th-century model also puts a tank in the middle of the court.',
+  build(b){
+    b.box(0,-0.3,0,2.8,0.8,2.8,'stone');
+    b.chhatri(0,0.5,0,2.3,'round');
+    b.box(8.5,-0.3,0,4.4,0.32,4.4,'stone');
+    b.box(8.5,-0.1,0,3.6,0.3,3.6,'water');
+    b.box(8.5,-0.1,-2.0,4.4,0.42,0.4,'stone'); b.box(8.5,-0.1,2.0,4.4,0.42,0.4,'stone');
+    b.box(6.5,-0.1,0,0.4,0.42,3.6,'stone'); b.box(10.5,-0.1,0,0.4,0.42,3.6,'stone');
+  }});
+def({id:'tripolia',name:'Tripolia',p0:3,label:true,at:[42.2,5.3],y:2.6,short:'1725',
+  meta:'Dated 1725',text:'The triple-arched gate between Badi Pol and Manek Chowk, with balconies over each arch.',
+  build(b){
+    b.block(0,0,3.2,11,5.6,{floors:2,faces:{e:'w',w:'w',n:'',s:''},plinth:2});
+    for(const z of [-3.3,0,3.3]){ b.arch(1.62,0.05,z,Math.PI/2,2.0,3.1); b.arch(-1.62,0.05,z,-Math.PI/2,2.0,3.1); b.jharokha(-1.6,3.7,z,-Math.PI/2,1.2); }
+    for(const z of [-4.6,4.6]) b.chhatri(0,5.6,z,1.4,'onion');
+    b.chhatri(0,5.6,0,1.6,'onion');
+  }});
+def({id:'badipoltowers',name:'Nakkar Khana & Ghadiyal ki Chatri',p0:3,label:true,at:[56,12],y:'g',short:'Third phase',
+  meta:'Third phase',text:'Two octagonal towers added to Badi Pol, capped with foliated domes and finials.',
+  build(b){ for(const z of [-3.4,3.4]) b.octTower(0,z,0,1.4,6.4,{kind:'onion',plinth:3}); }});
+def({id:'agad',name:'Hathi ki Agad',p0:3,label:true,at:[49,1.4],y:'g',short:'Third phase',
+  meta:'Third phase',text:'The elephant yard beside Tripolia. Elephant contests were staged in Manek Chowk to test the animals before campaigns.',
+  build(b){ b.court(0,0,8,7,0.9,2.2,{floors:1,outer:'',inner:'A',floor:'earth',plinth:3}); }});
+def({id:'manek3',name:'Manek Chowk, paved',p0:3,p1:4,at:[21.5,5.5],y:1.0,
+  build(b){ b.box(0,0,0,45,1.7,11,'paving'); }});
+def({id:'jagniwas',name:'Jag Niwas (Lake Palace)',p0:3,label:true,at:[-30,-56],y:0,short:'1743–46',
+  meta:'Maharana Jagat Singh II · 1743–46',text:'A summer palace on Jag Niwas island in Lake Pichola, now the Lake Palace hotel. The 18th-century model shows it as a single block out in the lake.',
+  build(b){
+    b.box(0,-2.2,0,13,2.6,10.5,'stone');
+    b.court(0,0,11,9,2.2,2.8,{y0:0.4,floors:2,outer:'w',inner:'a',floor:'lawn',plinth:0.5});
+    for(const [x,z] of [[-4.4,-3.4],[4.4,-3.4],[-4.4,3.4],[4.4,3.4]]) b.dome(x,3.2,z,0.9,'round');
+  }});
+
+// Phase 4 ------------------------------------------------------------
+def({id:'shivniwas',name:'Shiv Niwas',p0:4,label:true,at:[-63,-2],y:5.0,short:'1874–early 1900s',
+  meta:'Begun under Sajjan Singh, finished by Fateh Singh',text:'A crescent-shaped royal guest-house at the southern end of the complex, wrapped round a lawn and pool. Work began under Maharana Sajjan Singh (1874–1884) and was finished by Fateh Singh early in the 20th century; it opened as a hotel in 1982.',
+  build(b){
+    const a0=Math.PI/2,a1=Math.PI*1.5;
+    b.crescent(0,0,12,8.4,a0,a1,4.6,{floors:2,plinth:3.5});
+    b.halfDisc(0,0,8.4,a0,a1,0.2,3.4,'lawn');
+    b.ell(-3.4,0.1,0,2.9,0.16,1.9,'stone'); b.ell(-3.4,0.14,0,2.5,0.16,1.5,'water');
+    for(const a of [a0,a1]) b.chhatri(10.2*Math.cos(a),4.6,-10.2*Math.sin(a),1.6,'onion');
+    b.octTower(-10.2,0,0,1.6,6.2,{kind:'round',plinth:3.5});
+  }});
+def({id:'shambhu',name:'Shambhu Niwas',p0:4,label:true,at:[-55.5,-16],y:4.7,short:'1870s',
+  meta:'Maharana Shambhu Singh · 1870s',text:'Built in the 1870s as an independent royal residence beside the lake, and still a royal residence.',
+  build(b){
+    b.court(0,0,10,9,2.4,5.2,{floors:2,outer:'w',inner:'a',floor:'paving',plinth:5});
+    for(const [x,z] of [[-3.8,-3.3],[3.8,-3.3],[-3.8,3.3],[3.8,3.3]]) b.chhatri(x,5.2,z,1.2,'onion');
+    for(const x of [-2.4,2.4]) b.jharokha(x,2.6,-4.5,Math.PI,1.1);
+  }});
+def({id:'fateh',name:'Fateh Prakash & Durbar Hall',p0:4,label:true,at:[-39,-11],y:4.0,short:'1884–1930',
+  meta:'Maharana Fateh Singh · Durbar Hall begun 1909',text:'Built in the reign of Fateh Singh (1884–1930) as an independent palace and guest-house. Viceroy Lord Minto laid the foundation stone of its Durbar Hall in 1909, and its Crystal Gallery holds crystal ordered by Maharana Sajjan Singh. Now a hotel.',
+  build(b){
+    b.block(0,-1.5,11,9,6,{floors:3,plinth:4});
+    for(const [x,z] of [[-5.5,-6],[5.5,-6],[-5.5,3],[5.5,3]]) b.octTower(x,z,0,0.9,7,{kind:'onion',plinth:4});
+    b.block(0,4.6,9.4,3.4,7.2,{floors:2,whr:0.62,plinth:4});
+    b.box(0,7.2,4.6,8,0.6,2.4);
+  }});
+def({id:'samor',name:'Samor Bagh',p0:4,label:true,at:[-101,10],y:1.35,anchor:[-101,4.5,8],short:'Fourth phase',
+  meta:'Fourth phase',text:'Gardens laid out south of the palace, with the Promenade along Lake Pichola. Both are marked on the museum’s site plan.',
+  build(b){
+    const L=(x0,x1,z0,z1)=>b.box((x0+x1)/2+101,0,(z0+z1)/2-10,x1-x0,0.42,z1-z0,'lawn');
+    L(-119,-102,-19,-0.5); L(-99.5,-84,-19,-0.5); L(-119,-102,2.5,20); L(-99.5,-84,2.5,40); L(-119,-102,23,40);
+    b.ell(0.25,0,-9,2.2,0.5,2.2,'stone'); b.ell(0.25,0.1,-9,1.8,0.5,1.8,'water');
+    b.box(-0.5,-0.4,-32.6,41,0.85,2.0,'paving'); b.box(-0.5,0.45,-33.5,41,0.35,0.22);
+  }});
+def({id:'roads',name:'Roads',p0:4,at:[0,0],y:0,noFp:true,
+  build(b){
+    b.wall(-121,33,71,33,0.12,3.0,{role:'road',merlons:false,sink:0.5,seg:6});
+    b.wall(-82,-19,-82,33,0.12,2.6,{role:'road',merlons:false,sink:0.5,seg:3});
+    for(const [x,z,c] of [[-40,32.3,'carA'],[6,33.7,'carB'],[31,32.3,'carC']]){ const g=ground(x,z)+0.14; b.box(x,g,z,1.0,0.32,0.55,c); b.box(x,g+0.32,z,0.55,0.2,0.48,c); }
+  }});
+def({id:'lakewing',name:'Lakeside wing',p0:4,label:true,at:[44.2,-21],y:5.0,short:'Fourth phase',
+  meta:'Fourth phase',text:'A large block with two courtyards on the lake side, first seen in the 19th–20th-century model where the earlier walled yard stood.',
+  build(b){
+    b.court(-3.5,0,7,13,1.8,6,{floors:3,outer:'w',inner:'a',floor:'paving',plinth:5});
+    b.court(3.5,0,7,13,1.8,6,{floors:3,outer:'w',inner:'a',floor:'paving',plinth:5});
+    for(const [x,z] of [[-6,-5.5],[6,-5.5],[-6,5.5],[6,5.5]]) b.chhatri(x,6,z,1.2,'onion');
+  }});
+def({id:'halls',name:'Lower-terrace buildings',p0:4,label:true,at:[21.5,18.8],y:1.4,short:'Fourth phase',
+  meta:'Fourth phase',text:'The arcades give way to larger halls. The museum’s site plan marks this strip as the Paiga (stables), shops and a school.',
+  build(b){
+    b.block(-11,0,20,7,3.2,{floors:1,plinth:2,merlons:false});
+    for(const x of [-17,-11,-5]){ b.arch(x,3.0,3.5,0,2.6,1.6,0.5,'plaster'); b.arch(x,3.05,3.78,0,1.7,1.1,0.06,'dark'); }
+    b.court(11.5,0,20,7,1.8,2.6,{floors:1,outer:'w',inner:'a',floor:'paving',plinth:2});
+  }});
+def({id:'manek4',name:'Manek Chowk gardens',p0:4,label:true,at:[21.5,5.5],y:1.0,short:'Fourth phase',
+  meta:'Fourth phase',text:'Manek Chowk is laid out with lawns and small pools. The museum’s model even parks a few motor cars in the forecourt.',
+  build(b){
+    b.box(0,0,0,45,1.72,11,'paving');
+    for(const x of [-12,0,12]){ b.box(x,1.72,0.3,9,0.1,4.6,'lawn'); b.box(x,1.79,0.3,2.2,0.06,0.9,'water'); }
+    [[15,'carA'],[16.4,'carB'],[17.8,'carC'],[19.2,'carB']].forEach(([x,c])=>{ b.box(x,1.72,-3.8,0.55,0.32,1.0,c); b.box(x,2.04,-3.8,0.48,0.2,0.55,c); });
+  }});
+
+/* --------------------------------------------------- tree placements */
+function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const ZONES=[
+  {r:[-1,44,-0.5,11.5],p:[2,5]}, {r:[-2,46,12.3,25.5],p:[2,5]}, {r:[-6,37,-31,-1],p:[3,5]},
+  {r:[-123,73,31,35.2],p:[4,5]}, {r:[-84,-80,-22,35],p:[4,5]}, {r:[-123,-80,-30,45],p:[4,5]},
+  {r:[-79.6,-76.4,-20,29.6],p:[1,5]}, {r:[-79,57.6,26.6,29.4],p:[1,5]}, {r:[54.4,57.6,-20,29.4],p:[1,5]},
+  {r:[-79,-4,-21,-17.8],p:[1,4]}, {r:[19,44,-2.4,-0.2],p:[1,5]}, {r:[-0.5,43,10.2,12.8],p:[1,5]}
+];
+const THIN=[0,0,0.28,0.38,0.46];
+function gardenTrees(){
+  const T=[]; const add=(x,y,z,s,p0)=>T.push({x,y,z,s,p0,p1:5,garden:true});
+  for(const [dx,dz] of [[-1.9,-1.9],[1.9,-1.9],[-1.9,1.9],[1.9,1.9]]) add(31+dx,9.42,-11+dz,0.55,3);
+  for(const [x,z] of [[-22,-13],[-22,-7],[-12,-13],[-12,-7],[-10.3,-10]]) add(x,3.7,z,0.7,4);
+  for(const cx of [9.5,21.5,33.5]) for(const [dx,dz] of [[-3.3,-1.4],[3.3,-1.4],[-3.3,1.6],[3.3,1.6]]) add(cx+dx,2.82,5.8+dz,0.55,4);
+  for(const [x,z] of [[-68,-8],[-68,4],[-70.6,-2]]) add(x,5.2,z,0.6,4);
+  for(const [x,z] of [[-48,-5],[-46.5,0],[-51,1],[-44,2.5],[-56,-8.5],[-35,-1.5]]) add(x,ground(x,z),z,0.85,4);
+  const lawns=[[-119,-102,-19,-0.5],[-99.5,-84,-19,-0.5],[-119,-102,2.5,20],[-99.5,-84,2.5,40],[-119,-102,23,40]];
+  for(const [x0,x1,z0,z1] of lawns){
+    for(let x=x0+1.5;x<=x1-1.4;x+=3.6){ add(x,1.77,z0+1.2,0.9,4); add(x,1.77,z1-1.2,0.9,4); }
+    for(let z=z0+4.8;z<=z1-4.6;z+=3.8){ add(x0+1.2,1.77,z,0.9,4); add(x1-1.2,1.77,z,0.9,4); }
+  }
+  return T;
+}
+
+/* ------------------------------------------------------------ DOM refs */
+const $=id=>document.getElementById(id);
+const stage=$('stage'), canvas=$('gl'), pinsEl=$('pins'), board=$('board');
+const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let phase=1, markNew=true, labelMode='new', selected=null, currentView='model';
+
+const hashMatch=/^#phase([1-4])$/.exec(location.hash||'');
+if(hashMatch) phase=+hashMatch[1];
+
+/* -------------------------------------------------------- placard UI */
+function renderBoard(p,animate){
+  const P=PHASES[p-1];
+  const added=S.filter(s=>s.p0===p&&s.label&&s.list);
+  board.innerHTML=
+    '<p class="b-phase">Phase '+p+'</p>'+
+    '<h2 class="b-title">'+P.en+'</h2>'+
+    '<p class="b-hindi" lang="hi">'+P.hi+'</p>'+
+    '<svg class="orn" viewBox="0 0 120 12" aria-hidden="true"><path d="M0 6H47M73 6H120" stroke="currentColor" stroke-width="1"/><path d="M60 1.5L64.5 6L60 10.5L55.5 6Z" fill="none" stroke="currentColor"/><circle cx="51" cy="6" r="1.3" fill="currentColor"/><circle cx="69" cy="6" r="1.3" fill="currentColor"/></svg>'+
+    '<p class="b-years"><strong>'+P.years+' AD</strong><span>'+P.model+' · '+P.century+'</span></p>'+
+    '<h3 class="b-sub">'+P.sub+'</h3>'+
+    P.body.map(t=>'<p class="body">'+t+'</p>').join('')+
+    '<h4 class="b-h">Added in this phase</h4>'+
+    '<ul class="added">'+added.map(s=>'<li><button type="button" data-sid="'+s.id+'"><i class="sw sw-new"></i><span class="nm">'+s.name+'</span><span class="mt">'+((s.short&&!/phase$/i.test(s.short))?s.short:'')+'</span></button></li>').join('')+'</ul>'+
+    '<h4 class="b-h">Maharanas of this phase</h4>'+
+    '<dl class="rulers">'+P.rulers.map(r=>'<div><dt>'+r[0]+'</dt><dd>'+r[1]+'</dd></div>').join('')+'</dl>'+
+    (P.extra||'');
+  if(animate&&!reduceMotion){ board.classList.remove('swap'); void board.offsetWidth; board.classList.add('swap'); }
+  const tent=$('tent'); tent.innerHTML='<b>'+P.model+'</b><span>Architectural Evolution of The City Palace Complex, Udaipur</span><em>'+P.vitrine+'</em>';
+  document.querySelectorAll('#rail button').forEach(btn=>btn.setAttribute('aria-selected',String(+btn.dataset.p===p)));
+}
+board.addEventListener('click',e=>{ if(!renderer) return; const btn=e.target.closest('button[data-sid]'); if(btn){ select(btn.dataset.sid,true); if(window.innerWidth<980) stage.scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'}); } });
+
+renderBoard(phase,false);
+
+/* ------------------------------------------------------------- 3D setup */
+const THREE=window.THREE;
+let renderer=null;
+try{
+  if(!THREE||!THREE.OrbitControls) throw new Error('three missing');
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+}catch(err){ renderer=null; }
+if(!renderer){ $('nogl').hidden=false; $('hint').hidden=true; wireUIWithout3D(); return; }
+
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.setClearColor(0x000000,0);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(30,1,1,5000);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=0.09; controls.rotateSpeed=0.6; controls.zoomSpeed=0.9;
+controls.minDistance=18; controls.maxDistance=1600; controls.maxPolarAngle=Math.PI*0.492; controls.screenSpacePanning=true;
+
+scene.add(new THREE.HemisphereLight(0xffffff,0xb9a88a,0.58));
+scene.add(new THREE.AmbientLight(0xffffff,0.08));
+const sun=new THREE.DirectionalLight(0xfff3e2,0.78);
+sun.position.set(-25-55,115,-17+75); sun.target.position.set(-25,0,-17);
+sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-130,right:130,top:130,bottom:-130,near:10,far:420});
+sun.shadow.camera.updateProjectionMatrix(); sun.shadow.bias=-0.0004; sun.shadow.normalBias=0.03;
+scene.add(sun); scene.add(sun.target);
+const fill=new THREE.DirectionalLight(0xe8ecff,0.22); fill.position.set(40,60,-90); scene.add(fill);
+
+/* materials */
+function std(hex,o){ return new THREE.MeshStandardMaterial(Object.assign({color:hex,roughness:0.92,metalness:0},o||{})); }
+const MATS={
+  plaster:std(0xF3F1EA), plasterNew:std(0xF0BE72), plasterSel:std(0xEC97A6),
+  stone:std(0xD8D1C0), stoneNew:std(0xDDAA62), stoneSel:std(0xD68192),
+  dark:std(0x474C66,{roughness:0.8}), tile:std(0x6E9F84,{roughness:0.5}),
+  water:std(0x3F5DB2,{roughness:0.25}), lawn:std(0x7FA25A), paving:std(0xB8B5AB), earth:std(0xCB9068), road:std(0x5E606A),
+  carA:std(0xE2B13A,{roughness:0.5}), carB:std(0x4C7BCB,{roughness:0.5}), carC:std(0xC54A4A,{roughness:0.5})
+};
+const TINT={plaster:['plasterNew','plasterSel'],stone:['stoneNew','stoneSel']};
+const NO_CAST={dark:1,water:1,lawn:1,paving:1,earth:1,road:1,tile:1};
+
+/* prototype geometry */
+const ni=g=>g.index?g.toNonIndexed():g;
+const ROUND=[[1,0],[1,0.12],[0.97,0.36],[0.89,0.58],[0.76,0.78],[0.57,0.93],[0.33,1.03],[0.12,1.07],[0.14,1.13],[0.21,1.18],[0.13,1.27],[0.05,1.34],[0.06,1.46],[0,1.62]];
+const ONION=[[0.86,0],[0.92,0.1],[1.05,0.32],[1.13,0.58],[1.08,0.84],[0.9,1.08],[0.62,1.3],[0.34,1.48],[0.15,1.6],[0.12,1.67],[0.2,1.72],[0.12,1.82],[0.05,1.9],[0.06,2.04],[0,2.26]];
+const G={
+  box:ni(new THREE.BoxGeometry(1,1,1)),
+  cyl8:ni(new THREE.CylinderGeometry(1,1,1,8)),
+  cyl12:ni(new THREE.CylinderGeometry(1,1,1,12)),
+  cyl24:ni(new THREE.CylinderGeometry(1,1,1,24)),
+  round:ni(new THREE.LatheGeometry(ROUND.map(p=>new THREE.Vector2(p[0],p[1])),14)),
+  onion:ni(new THREE.LatheGeometry(ONION.map(p=>new THREE.Vector2(p[0],p[1])),14)),
+  arch:(function(){ const s=new THREE.Shape(); s.moveTo(-0.5,0); s.lineTo(0.5,0); s.lineTo(0.5,0.55); s.absarc(0,0.55,0.5,0,Math.PI,false); s.lineTo(-0.5,0);
+    const g=new THREE.ExtrudeGeometry(s,{depth:1,bevelEnabled:false,curveSegments:5}); g.translate(0,0,-0.5); return ni(g); })()
+};
+const _p=new THREE.Vector3(),_s=new THREE.Vector3(),_q=new THREE.Quaternion(),_e=new THREE.Euler();
+function M(px,py,pz,ry,sx,sy,sz){ _p.set(px,py,pz); _q.setFromEuler(_e.set(0,ry||0,0)); _s.set(sx,sy,sz); return new THREE.Matrix4().compose(_p,_q,_s); }
+
+function mergeParts(list){
+  let n=0; for(const it of list) n+=it[0].attributes.position.count;
+  const pos=new Float32Array(n*3), nor=new Float32Array(n*3); const nm=new THREE.Matrix3(); let o=0;
+  for(const it of list){
+    const g=it[0], m=it[1]; const P=g.attributes.position.array, N=g.attributes.normal.array; nm.getNormalMatrix(m);
+    const e=m.elements, q=nm.elements;
+    for(let i=0;i<P.length;i+=3){
+      const x=P[i],y=P[i+1],z=P[i+2];
+      pos[o]=e[0]*x+e[4]*y+e[8]*z+e[12]; pos[o+1]=e[1]*x+e[5]*y+e[9]*z+e[13]; pos[o+2]=e[2]*x+e[6]*y+e[10]*z+e[14];
+      const a=N[i],bb=N[i+1],c=N[i+2];
+      let nx=q[0]*a+q[3]*bb+q[6]*c, ny=q[1]*a+q[4]*bb+q[7]*c, nz=q[2]*a+q[5]*bb+q[8]*c; const l=Math.hypot(nx,ny,nz)||1;
+      nor[o]=nx/l; nor[o+1]=ny/l; nor[o+2]=nz/l; o+=3;
+    }
+  }
+  const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.BufferAttribute(pos,3)); geo.setAttribute('normal',new THREE.BufferAttribute(nor,3));
+  geo.computeBoundingBox(); geo.computeBoundingSphere(); return geo;
+}
+
+/* builder: collects parts in a structure's local frame, merges per material */
+class Builder{
+  constructor(o){ this.o=o; this.parts=new Map(); }
+  gy(lx,lz){ return ground(lx+this.o[0],lz+this.o[2])-this.o[1]; }
+  add(geo,m,role){ if(!this.parts.has(role)) this.parts.set(role,[]); this.parts.get(role).push([geo,m]); }
+  box(cx,y0,cz,w,h,d,role,ry){ this.add(G.box,M(cx,y0+h/2,cz,ry||0,w,h,d),role||'plaster'); }
+  cyl(cx,y0,cz,r,h,role,seg){ this.add(G['cyl'+(seg||8)],M(cx,y0+h/2,cz,0,r,h,r),role||'plaster'); }
+  ell(cx,y0,cz,rx,h,rz,role){ this.add(G.cyl24,M(cx,y0+h/2,cz,0,rx,h,rz),role||'plaster'); }
+  arch(x,y,z,ry,w,h,t,role){ this.add(G.arch,M(x,y,z,ry,w,h/1.05,t||0.08),role||'dark'); }
+  dome(x,y,z,r,kind,role){ this.add(G.cyl12,M(x,y+r*0.13,z,0,r*0.98,r*0.26,r*0.98),role||'plaster'); this.add(kind==='onion'?G.onion:G.round,M(x,y+r*0.26,z,0,r,r,r),role||'plaster'); }
+  chhatri(x,y,z,s,kind){
+    this.box(x,y,z,s,0.14*s,s);
+    const p=s*0.4, ph=s*0.55, pw=s*0.09;
+    for(const d of [[-p,-p],[p,-p],[-p,p],[p,p]]) this.box(x+d[0],y+0.14*s,z+d[1],pw,ph,pw);
+    this.box(x,y+0.14*s+ph,z,s*1.18,0.07*s,s*1.18);
+    this.box(x,y+0.21*s+ph,z,s*0.92,0.1*s,s*0.92);
+    this.dome(x,y+0.31*s+ph,z,s*0.42,kind||'round');
+  }
+  jharokha(x,y,z,ry,w){
+    w=w||1; const c=Math.cos(ry), s=Math.sin(ry);
+    const P=(dx,dz)=>[x+dx*c+dz*s, z-dx*s+dz*c];
+    let q=P(0,0.28); this.box(q[0],y-0.22,q[1],w*1.05,0.22,0.56,'plaster',ry);
+    q=P(0,0.3); this.box(q[0],y,q[1],w,0.95,0.6,'plaster',ry);
+    const f=P(0,0.61); this.arch(f[0],y+0.1,f[1],ry,w*0.62,0.7,0.06);
+    this.box(q[0],y+0.95,q[1],w*1.2,0.1,0.78,'plaster',ry);
+    this.dome(q[0],y+1.05,q[1],w*0.34,'round');
+  }
+  merlonsLine(x0,z0,x1,z1,y,s,role){
+    const L=Math.hypot(x1-x0,z1-z0); const n=Math.max(1,Math.floor(L/(s*2.6))); const dx=(x1-x0)/L, dz=(z1-z0)/L; const ry=Math.atan2(-dz,dx);
+    for(let k=0;k<n;k++){ const t=(k+0.5)*L/n; this.box(x0+dx*t,y,z0+dz*t,s,s*1.3,s,role||'plaster',ry); }
+  }
+  merlonsRect(cx,cz,w,d,y,s){
+    s=s||0.28; const hw=w/2-s/2, hd=d/2-s/2;
+    this.merlonsLine(cx-hw,cz-hd,cx+hw,cz-hd,y,s); this.merlonsLine(cx-hw,cz+hd,cx+hw,cz+hd,y,s);
+    this.merlonsLine(cx-hw,cz-hd+s*2,cx-hw,cz+hd-s*2,y,s); this.merlonsLine(cx+hw,cz-hd+s*2,cx+hw,cz+hd-s*2,y,s);
+  }
+  faceOpenings(cx,cz,w,d,y0,fh,floors,f,kind,o){
+    const len=(f==='e'||f==='w')?w:d;
+    const place=(t,y,ww,wh)=>{
+      let x,z,ry;
+      if(f==='e'){ x=cx+t; z=cz+d/2+0.02; ry=0; }
+      else if(f==='w'){ x=cx+t; z=cz-d/2-0.02; ry=Math.PI; }
+      else if(f==='n'){ x=cx+w/2+0.02; z=cz+t; ry=Math.PI/2; }
+      else { x=cx-w/2-0.02; z=cz+t; ry=-Math.PI/2; }
+      this.arch(x,y,z,ry,ww,wh);
+    };
+    if(kind==='g'){ place(0,y0+0.05,Math.min(len*0.42,2.4),Math.min(fh*floors*0.62,3.2)); return; }
+    const sp=o.spacing||1.25; const n=Math.max(1,Math.floor((len-0.8)/sp)); const start=-(n-1)*sp/2;
+    for(let k=0;k<floors;k++){
+      if(kind==='u'&&k===0) continue;
+      const arcade=(kind==='A')||(kind==='a'&&k===0);
+      if(arcade){
+        const asp=Math.max(sp,1.35); const an=Math.max(1,Math.floor((len-0.6)/asp)); const ast=-(an-1)*asp/2;
+        for(let i=0;i<an;i++) place(ast+i*asp,y0+k*fh+0.05,Math.min(asp*0.7,1.1),fh*0.72);
+      } else {
+        for(let i=0;i<n;i++) place(start+i*sp,y0+k*fh+fh*0.25,o.ww||0.42,fh*(o.whr||0.45));
+      }
+    }
+  }
+  block(cx,cz,w,d,h,o){
+    o=o||{}; const y0=o.y0||0, pl=(o.plinth===undefined)?4:o.plinth, floors=o.floors||2, role=o.role||'plaster';
+    if(pl>0) this.box(cx,y0-pl,cz,w,pl,d,'stone');
+    this.box(cx,y0,cz,w,h,d,role);
+    const fh=(h-0.5)/floors;
+    if(o.cornice!==false){
+      for(let k=1;k<floors;k++) this.box(cx,y0+k*fh-0.12,cz,w+0.36,0.12,d+0.36,role);
+      this.box(cx,y0+h-0.55,cz,w+0.46,0.14,d+0.46,role);
+    }
+    if(o.merlons!==false) this.merlonsRect(cx,cz,w,d,y0+h,o.mSize||0.28);
+    const faces=o.faces||{e:'w',w:'w',n:'w',s:'w'};
+    for(const f of ['e','w','n','s']) if(faces[f]) this.faceOpenings(cx,cz,w,d,y0,fh,floors,f,faces[f],o);
+  }
+  court(cx,cz,w,d,wing,h,o){
+    o=o||{}; const fo=(o.outer===undefined)?'w':o.outer, fi=(o.inner===undefined)?'a':o.inner; const y0=o.y0||0;
+    const base=Object.assign({},o); delete base.floor;
+    this.block(cx,cz-d/2+wing/2,w,wing,h,Object.assign({},base,{faces:{w:fo,e:fi,n:fo,s:fo}}));
+    this.block(cx,cz+d/2-wing/2,w,wing,h,Object.assign({},base,{faces:{e:fo,w:fi,n:fo,s:fo}}));
+    this.block(cx-w/2+wing/2,cz,wing,d-2*wing,h,Object.assign({},base,{faces:{s:fo,n:fi,e:'',w:''}}));
+    this.block(cx+w/2-wing/2,cz,wing,d-2*wing,h,Object.assign({},base,{faces:{n:fo,s:fi,e:'',w:''}}));
+    if(o.floor) this.box(cx,y0-0.3,cz,w-2*wing+0.04,0.4,d-2*wing+0.04,o.floor);
+  }
+  octTower(x,z,y0,r,h,o){
+    o=o||{}; const pl=(o.plinth===undefined)?3:o.plinth;
+    if(pl>0) this.cyl(x,y0-pl,z,r*1.06,pl,'stone',8);
+    this.cyl(x,y0,z,r,h,'plaster',8);
+    const rings=2, seg=h/(rings+1);
+    for(let k=1;k<=rings;k++) this.cyl(x,y0+seg*k-0.12,z,r*1.15,0.12,'plaster',8);
+    for(let k=0;k<=rings;k++){
+      const yy=y0+seg*k+seg*0.25;
+      for(let i=0;i<4;i++){ const th=Math.PI/8+i*Math.PI/2+(k%2)*Math.PI/4; const ap=r*0.924+0.02; this.arch(x+Math.sin(th)*ap,yy,z+Math.cos(th)*ap,th,r*0.5,seg*0.45); }
+    }
+    this.cyl(x,y0+h,z,r*0.95,0.85,'dark',8);
+    for(let i=0;i<8;i++){ const th=i*Math.PI/4; this.box(x+Math.sin(th)*r*0.92,y0+h,z+Math.cos(th)*r*0.92,0.16,0.85,0.16); }
+    this.cyl(x,y0+h+0.85,z,r*1.25,0.14,'plaster',8);
+    this.dome(x,y0+h+0.99,z,r*0.95,o.kind||'onion');
+  }
+  wall(x0,z0,x1,z1,h,t,o){
+    o=o||{}; const L=Math.hypot(x1-x0,z1-z0); const n=Math.max(1,Math.ceil(L/(o.seg||3)));
+    const dx=(x1-x0)/L, dz=(z1-z0)/L, ry=Math.atan2(-dz,dx), sl=L/n, role=o.role||'plaster', sink=(o.sink===undefined)?1.5:o.sink;
+    for(let i=0;i<n;i++){
+      const ax=x0+i*sl*dx, az=z0+i*sl*dz, bx=ax+sl*dx, bz=az+sl*dz, mx=(ax+bx)/2, mz=(az+bz)/2;
+      const ga=this.gy(ax,az), gb=this.gy(bx,bz), gm=this.gy(mx,mz);
+      const top=Math.max(ga,gb,gm)+h, bot=Math.min(ga,gb,gm)-sink;
+      this.box(mx,bot,mz,sl+0.04,top-bot,t,role,ry);
+      if(o.merlons!==false){ const m=Math.max(1,Math.floor(sl/0.75)); for(let k=0;k<m;k++){ const tt=-sl/2+(k+0.5)*sl/m; this.box(mx+tt*dx,top,mz+tt*dz,0.3,0.36,t*0.55,role,ry); } }
+    }
+  }
+  crescent(cx,cz,r0,r1,a0,a1,h,o){
+    o=o||{}; const y0=o.y0||0, pl=(o.plinth===undefined)?3:o.plinth, floors=o.floors||2;
+    const mk=(ra,rb,hh,y,role)=>{ const sh=new THREE.Shape(); sh.absarc(0,0,ra,a0,a1,false); sh.absarc(0,0,rb,a1,a0,true); sh.closePath();
+      const g=new THREE.ExtrudeGeometry(sh,{depth:hh,bevelEnabled:false,curveSegments:48}); g.rotateX(-Math.PI/2); this.add(ni(g),M(cx,y,cz,0,1,1,1),role); };
+    if(pl>0) mk(r0,r1,pl,y0-pl,'stone');
+    mk(r0,r1,h,y0,'plaster');
+    const fh=(h-0.5)/floors;
+    for(let k=1;k<floors;k++) mk(r0+0.2,r1-0.2,0.12,y0+k*fh-0.12,'plaster');
+    mk(r0+0.28,r1-0.28,0.14,y0+h-0.55,'plaster');
+    for(const side of [[r0,1],[r1,-1]]){
+      const r=side[0], out=side[1]; const n=Math.floor((a1-a0)*r/1.3);
+      for(let k=0;k<floors;k++){
+        const arcade=out<0&&k===0;
+        for(let i=1;i<n;i++){
+          const a=a0+i*(a1-a0)/n, ca=Math.cos(a), sa=Math.sin(a), rr=r+out*0.03;
+          const ry=out>0?Math.atan2(ca,-sa):Math.atan2(-ca,sa);
+          this.arch(cx+rr*ca,y0+k*fh+(arcade?0.05:fh*0.25),cz-rr*sa,ry,arcade?0.9:0.42,arcade?fh*0.72:fh*0.45);
+        }
+      }
+    }
+    const nm=Math.floor((a1-a0)*r0/0.75);
+    for(let i=0;i<nm;i++){ const a=a0+(i+0.5)*(a1-a0)/nm; const rr=r0-0.18; this.box(cx+rr*Math.cos(a),y0+h,cz-rr*Math.sin(a),0.28,0.36,0.28,'plaster',a); }
+  }
+  halfDisc(cx,cz,r,a0,a1,top,depth,role){
+    const sh=new THREE.Shape(); sh.absarc(0,0,r,a0,a1,false); sh.closePath();
+    const g=new THREE.ExtrudeGeometry(sh,{depth,bevelEnabled:false,curveSegments:40}); g.rotateX(-Math.PI/2);
+    this.add(ni(g),M(cx,top-depth,cz,0,1,1,1),role);
+  }
+  finish(){
+    const grp=new THREE.Group();
+    for(const [role,list] of this.parts){
+      const mesh=new THREE.Mesh(mergeParts(list),MATS[role]); mesh.userData.role=role;
+      mesh.castShadow=!NO_CAST[role]; mesh.receiveShadow=true; grp.add(mesh);
+    }
+    return grp;
+  }
+}
+
+/* build all structures */
+const labelDefs=[];
+S.forEach((s,i)=>{
+  s.order=i;
+  const x=s.at[0], z=s.at[1]; const y=(s.y==='g')?ground(x,z):(s.y||0);
+  const b=new Builder([x,y,z]); if(s.build) s.build(b);
+  const grp=b.finish(); grp.position.set(x,y,z); grp.userData.sid=s.id; scene.add(grp); s.group=grp;
+  const box=new THREE.Box3().setFromObject(grp);
+  s.box=box.isEmpty()?null:box;
+  if(s.anchor) s.anchorV=new THREE.Vector3(s.anchor[0],s.anchor[1],s.anchor[2]);
+  else if(s.box) s.anchorV=new THREE.Vector3((box.min.x+box.max.x)/2,box.max.y+0.6,(box.min.z+box.max.z)/2);
+  else s.anchorV=new THREE.Vector3(x,y+2,z);
+  s.fp=(!s.noFp&&s.box)?[box.min.x-0.6,box.max.x+0.6,box.min.z-0.6,box.max.z+0.6]:null;
+  const vis=phase>=s.p0&&phase<s.p1; s.cur=vis?1:0; grp.scale.y=vis?1:0.001; grp.visible=vis;
+  if(s.label){
+    const pin=document.createElement('button'); pin.type='button'; pin.className='pin'; pin.hidden=true; pin.setAttribute('aria-label',s.name);
+    pin.innerHTML='<span class="lab">'+s.name+'</span><span class="stem"></span><span class="dot"></span>';
+    pin.addEventListener('click',ev=>{ ev.stopPropagation(); select(s.id,false); });
+    pinsEl.appendChild(pin); s.pin=pin; s.lab=pin.firstChild; labelDefs.push(s);
+  }
+});
+const byId=Object.fromEntries(S.map(s=>[s.id,s]));
+
+/* terrain */
+function n1(x,z){ return 0.5+0.5*Math.sin(x*0.21+Math.sin(z*0.17)*2.0)*Math.cos(z*0.23+Math.sin(x*0.11)*1.7); }
+const CC={sand:[0.86,0.79,0.63],olive:[0.58,0.63,0.39],earth:[0.83,0.63,0.47],rockG:[0.56,0.6,0.44],skirt:[0.42,0.37,0.3],deep:[0.17,0.2,0.36],sand4:[0.88,0.82,0.67],wet:[0.62,0.56,0.45]};
+function mix3(a,b,t){ return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]; }
+function terrainColor(x,z,y,p,edge){
+  if(edge) return CC.skirt; if(y<0.02) return CC.deep;
+  const n=n1(x,z), n2=n1(z*1.3+7,x*0.9-3), rock=g2(x-31,z+11,9,7);
+  let c;
+  if(p===1){ c=mix3(CC.olive,CC.sand,0.2+0.4*n2); c=mix3(c,CC.rockG,clamp(rock*1.4,0,0.8)); }
+  else if(p===2){ c=mix3(CC.sand,CC.earth,0.25+0.35*n2); c=mix3(c,CC.olive,ss(0.62,0.82,n)*0.75); c=mix3(c,CC.rockG,clamp(rock*1.2,0,0.7)); }
+  else if(p===3){ c=mix3(CC.sand,CC.earth,0.2+0.3*n2); c=mix3(c,CC.olive,ss(0.66,0.86,n)*0.7); c=mix3(c,CC.rockG,clamp(rock*0.8,0,0.5)); }
+  else { c=mix3(CC.sand4,CC.earth,0.12+0.2*n2); c=mix3(c,CC.olive,Math.max(ss(0.58,0.8,n)*0.7,(x>37&&z<0)?0.5:0,(x<-80)?0.35:0)); }
+  if(y<0.6) c=mix3(c,CC.wet,0.5);
+  return c;
+}
+const TW=BX1-BX0, TD=BZ1-BZ0;
+const tGeo=new THREE.PlaneGeometry(TW,TD,TW,TD); tGeo.rotateX(-Math.PI/2); tGeo.translate((BX0+BX1)/2,0,(BZ0+BZ1)/2);
+const tPos=tGeo.attributes.position, tN=tPos.count;
+const tEdge=new Uint8Array(tN);
+for(let i=0;i<tN;i++){ const x=tPos.getX(i), z=tPos.getZ(i); const e=x<BX0+0.01||x>BX1-0.01||z<BZ0+0.01||z>BZ1-0.01; tEdge[i]=e?1:0; tPos.setY(i,e?-3.2:ground(x,z)); }
+tGeo.computeVertexNormals();
+const tCols=[null];
+for(let p=1;p<=4;p++){ const a=new Float32Array(tN*3); for(let i=0;i<tN;i++){ const c=terrainColor(tPos.getX(i),tPos.getZ(i),tPos.getY(i),p,tEdge[i]); a[i*3]=c[0]; a[i*3+1]=c[1]; a[i*3+2]=c[2]; } tCols.push(a); }
+const tColAttr=new THREE.BufferAttribute(new Float32Array(tCols[phase]),3); tGeo.setAttribute('color',tColAttr);
+const contourU={value:[0,1,0.6,0.5,0.35][phase]};
+const tMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0});
+if(renderer.capabilities.isWebGL2) tMat.onBeforeCompile=sh=>{
+  sh.uniforms.uContour=contourU;
+  sh.vertexShader='varying float vWY;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\n vWY = (modelMatrix * vec4(transformed, 1.0)).y;');
+  sh.fragmentShader='varying float vWY;\nuniform float uContour;\n'+sh.fragmentShader.replace('#include <color_fragment>',
+    '#include <color_fragment>\n { float cy = vWY / 0.6; float fw = max(fwidth(cy), 1e-4); float dd = abs(fract(cy + 0.5) - 0.5);\n'+
+    ' float ln = (1.0 - smoothstep(fw * 0.6, fw * 1.7, dd)) * step(0.35, vWY); diffuseColor.rgb *= 1.0 - 0.2 * ln * uContour; }');
+};
+const terrain=new THREE.Mesh(tGeo,tMat); terrain.receiveShadow=true; scene.add(terrain);
+
+const water=new THREE.Mesh(new THREE.BoxGeometry(TW-0.8,3.0,TD-0.8),std(0x34479A,{roughness:0.28}));
+water.position.set((BX0+BX1)/2,-1.5,(BZ0+BZ1)/2); water.receiveShadow=true; scene.add(water);
+const base=new THREE.Mesh(new THREE.BoxGeometry(TW+1.2,0.7,TD+1.2),std(0x23242C,{roughness:0.7}));
+base.position.set((BX0+BX1)/2,-3.55,(BZ0+BZ1)/2); scene.add(base);
+
+/* trees */
+const trees=[]; const rnd=mulberry(1559);
+for(let i=0;i<760;i++){
+  const x=BX0+3+rnd()*(TW-6), z=-30+rnd()*72, s=0.75+rnd()*0.75, fade=rnd(), keep=rnd();
+  const g=ground(x,z); if(g<0.9) continue;
+  const inside=x>-78&&x<56&&z<28; const dens=(x<-31&&x>-78&&z>-19)?0.75:inside?0.5:0.38;
+  if(keep>dens) continue;
+  trees.push({x,y:g,z,s,p0:1,p1:5,fade,garden:false});
+}
+gardenTrees().forEach(t=>trees.push(t));
+function treeVisible(t,p){
+  if(p<t.p0||p>=t.p1) return false;
+  if(t.garden) return true;
+  if(t.fade<THIN[p]) return false;
+  for(const zn of ZONES){ if(p>=zn.p[0]&&p<zn.p[1]&&t.x>zn.r[0]&&t.x<zn.r[1]&&t.z>zn.r[2]&&t.z<zn.r[3]) return false; }
+  for(const s of S){ if(s.fp&&p>=s.p0&&p<s.p1&&t.x>s.fp[0]&&t.x<s.fp[1]&&t.z>s.fp[2]&&t.z<s.fp[3]) return false; }
+  return true;
+}
+trees.forEach(t=>{ t.vis=[0,1,2,3,4].map(p=>p?treeVisible(t,p):false); t.cur=t.vis[phase]?1:0; t.delay=Math.random()*350; });
+const NT=trees.length;
+const foliage=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,1),std(0xffffff,{roughness:0.95}),NT);
+const trunks=new THREE.InstancedMesh(new THREE.CylinderGeometry(0.07,0.1,1,5),std(0x5B4634),NT);
+foliage.castShadow=true; foliage.receiveShadow=true; trunks.castShadow=true;
+foliage.frustumCulled=false; trunks.frustumCulled=false;
+foliage.instanceMatrix.setUsage(THREE.DynamicDrawUsage); trunks.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+const tc=new THREE.Color();
+trees.forEach((t,i)=>{ const v=rnd(); tc.setRGB(0.30+0.08*v,0.45+0.08*rnd(),0.24+0.05*v); foliage.setColorAt(i,tc); });
+scene.add(foliage,trunks);
+function writeTrees(){
+  const m=new THREE.Matrix4();
+  for(let i=0;i<NT;i++){
+    const t=trees[i], k=t.cur, th=t.s*0.75;
+    const sc=Math.max(k,0.0001);
+    m.compose(_p.set(t.x,t.y+(th+t.s*0.75)*sc,t.z),_q.identity(),_s.set(t.s*sc,t.s*0.92*sc,t.s*sc)); foliage.setMatrixAt(i,m);
+    m.compose(_p.set(t.x,t.y+th*sc/2,t.z),_q.identity(),_s.set(sc,th*sc,sc)); trunks.setMatrixAt(i,m);
+  }
+  foliage.instanceMatrix.needsUpdate=true; trunks.instanceMatrix.needsUpdate=true;
+}
+writeTrees(); if(foliage.instanceColor) foliage.instanceColor.needsUpdate=true;
+
+/* ---------------------------------------------------------- views */
+const VIEWS={
+  model:{az:-22,el:30,fov:30,target:[-10,3,-3],box:[[-80,0,-30],[58,13,30]]},
+  east:{az:0,el:2.5,fov:11,target:[-10,6,0],box:[[-80,0,-5],[58,17,5]]},
+  lake:{az:180,el:2.5,fov:11,target:[-10,6,-16],box:[[-80,0,-21],[58,17,-11]]},
+  plan:{az:0,el:89.6,fov:30,target:[-25,0,-14],box:[[-122,0,-62],[72,0,44]]}
+};
+const fitCam=new THREE.PerspectiveCamera(30,1,1,5000), _v=new THREE.Vector3();
+function corners(b){ const r=[]; for(const x of [b[0][0],b[1][0]]) for(const y of [b[0][1],b[1][1]]) for(const z of [b[0][2],b[1][2]]) r.push(new THREE.Vector3(x,y,z)); return r; }
+function fitDistance(dir,target,cs,fov,aspect){
+  fitCam.fov=fov; fitCam.aspect=aspect; fitCam.updateProjectionMatrix();
+  let lo=5, hi=4000;
+  for(let i=0;i<26;i++){
+    const mid=(lo+hi)/2; fitCam.position.copy(target).addScaledVector(dir,mid); fitCam.up.set(0,1,0); fitCam.lookAt(target); fitCam.updateMatrixWorld();
+    let ok=true; for(const c of cs){ _v.copy(c).project(fitCam); if(_v.z>1||Math.abs(_v.x)>0.92||_v.y>0.7||_v.y<-0.78){ ok=false; break; } }
+    if(ok) hi=mid; else lo=mid;
+  }
+  return hi;
+}
+function dirFrom(az,el){ const a=az*Math.PI/180, e=el*Math.PI/180; return new THREE.Vector3(Math.sin(a)*Math.cos(e),Math.sin(e),Math.cos(a)*Math.cos(e)); }
+function viewParams(name){
+  const v=VIEWS[name]; const aspect=camera.aspect; let az=v.az, el=v.el;
+  if(name==='model'&&aspect<1.05){ az=-36; el=38; }
+  const dir=dirFrom(az,el), target=new THREE.Vector3(v.target[0],v.target[1],v.target[2]);
+  const dist=fitDistance(dir,target,corners(v.box),v.fov,aspect);
+  return {target,dir,dist,fov:v.fov};
+}
+
+let camTween=null;
+function sphericalOf(pos,target){ const d=_v.copy(pos).sub(target); const r=d.length(); return {r,th:Math.atan2(d.x,d.z),ph:Math.acos(clamp(d.y/r,-1,1))}; }
+function flyTo(target,dir,dist,fov,dur){
+  const from={target:controls.target.clone(),sph:sphericalOf(camera.position,controls.target),fov:camera.fov};
+  const th1=Math.atan2(dir.x,dir.z), ph1=Math.acos(clamp(dir.y,-1,1));
+  let dth=th1-from.sph.th; while(dth>Math.PI) dth-=2*Math.PI; while(dth<-Math.PI) dth+=2*Math.PI;
+  const to={target:target.clone(),th:from.sph.th+dth,ph:ph1,r:dist,fov};
+  if(reduceMotion||dur===0){ applyCam(to.target,to.r,to.th,to.ph,to.fov); controls.update(); dirty=true; return; }
+  controls.enabled=false;
+  camTween={t0:performance.now(),dur:dur||1000,from,to};
+}
+function applyCam(target,r,th,ph,fov){
+  controls.target.copy(target);
+  camera.position.set(target.x+r*Math.sin(ph)*Math.sin(th),target.y+r*Math.cos(ph),target.z+r*Math.sin(ph)*Math.cos(th));
+  if(camera.fov!==fov){ camera.fov=fov; camera.updateProjectionMatrix(); }
+  camera.lookAt(target);
+}
+function stepCam(now){
+  if(!camTween) return false;
+  const T=camTween; let k=clamp((now-T.t0)/T.dur,0,1); const e=k<0.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+  const tg=_tg.copy(T.from.target).lerp(T.to.target,e);
+  const r=Math.exp(Math.log(T.from.sph.r)+(Math.log(T.to.r)-Math.log(T.from.sph.r))*e);
+  applyCam(tg,r,T.from.sph.th+(T.to.th-T.from.sph.th)*e,T.from.sph.ph+(T.to.ph-T.from.sph.ph)*e,T.from.fov+(T.to.fov-T.from.fov)*e);
+  if(k>=1){ camTween=null; controls.enabled=true; controls.update(); }
+  return true;
+}
+const _tg=new THREE.Vector3();
+function setView(name,instant){
+  currentView=name;
+  document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===name)));
+  const v=viewParams(name); flyTo(v.target,v.dir,v.dist,v.fov,instant?0:1100);
+  $('scale').hidden=!(name==='east'||name==='lake'||name==='plan');
+}
+
+/* ---------------------------------------------------------- phases */
+let tweens=[];
+function setPhase(p,fromUser){
+  if(p===phase) return;
+  if(fromUser) stopPlay();
+  phase=p; tweens=[];
+  const now=performance.now();
+  let order=0;
+  S.forEach(s=>{
+    const vis=p>=s.p0&&p<s.p1, target=vis?1:0;
+    if(s.cur===target) return;
+    const entering=target===1;
+    const delay=entering?(140+order++*90):0;
+    tweens.push({kind:'s',s,from:s.cur,to:target,t0:now+delay,dur:entering?950:380});
+  });
+  if(selected&&!(p>=byId[selected].p0&&p<byId[selected].p1)) deselect();
+  trees.forEach(t=>{ t.from=t.cur; t.to=t.vis[p]?1:0; });
+  tweens.push({kind:'trees',t0:now,dur:950});
+  const cFrom=new Float32Array(tColAttr.array), cTo=tCols[p], kFrom=contourU.value, kTo=[0,1,0.6,0.5,0.35][p];
+  tweens.push({kind:'terrain',t0:now,dur:900,cFrom,cTo,kFrom,kTo});
+  if(reduceMotion){ tweens.forEach(t=>{ t.t0=now-10000; }); }
+  renderBoard(p,true); applyMaterials(); dirty=true;
+}
+const easeOut=k=>1-Math.pow(1-k,3);
+function stepTweens(now){
+  if(!tweens.length) return false;
+  let treesDirty=false;
+  tweens=tweens.filter(t=>{
+    const k=clamp((now-t.t0)/t.dur,0,1);
+    if(t.kind==='s'){
+      if(now<t.t0) return true;
+      const e=t.to>t.from?easeOut(k):k*k;
+      t.s.cur=t.from+(t.to-t.from)*e; t.s.group.visible=t.s.cur>0.002; t.s.group.scale.y=Math.max(t.s.cur,0.001);
+      return k<1;
+    }
+    if(t.kind==='trees'){
+      const el=now-t.t0;
+      for(const tr of trees){ if(tr.from===tr.to) continue; const kk=clamp((el-tr.delay)/600,0,1); tr.cur=tr.from+(tr.to-tr.from)*easeOut(kk); }
+      treesDirty=true;
+      if(k>=1){ for(const tr of trees) tr.cur=tr.to; return false; }
+      return true;
+    }
+    if(t.kind==='terrain'){
+      const e=easeOut(k), a=tColAttr.array;
+      for(let i=0;i<a.length;i++) a[i]=t.cFrom[i]+(t.cTo[i]-t.cFrom[i])*e;
+      tColAttr.needsUpdate=true; contourU.value=t.kFrom+(t.kTo-t.kFrom)*e;
+      return k<1;
+    }
+    return false;
+  });
+  if(treesDirty) writeTrees();
+  return true;
+}
+function applyMaterials(){
+  S.forEach(s=>{
+    const isNew=markNew&&phase>1&&s.p0===phase, isSel=selected===s.id;
+    s.group.children.forEach(m=>{ const r=m.userData.role; if(TINT[r]) m.material=MATS[isSel?TINT[r][1]:isNew?TINT[r][0]:r]; });
+  });
+  dirty=true;
+}
+
+/* ---------------------------------------------------------- selection */
+function select(id,fly){
+  const s=byId[id]; if(!s) return;
+  selected=id; applyMaterials();
+  $('selMeta').textContent='Phase '+s.p0+' · '+s.meta;
+  $('selName').textContent=s.name;
+  $('selText').textContent=s.text||'';
+  $('sel').hidden=false;
+  if(fly&&s.box){
+    const c=new THREE.Vector3(); s.box.getCenter(c);
+    const dir=_d.copy(camera.position).sub(controls.target).normalize().clone();
+    const cs=[s.box.min.clone(),s.box.max.clone(),new THREE.Vector3(s.box.min.x,s.box.max.y,s.box.max.z),new THREE.Vector3(s.box.max.x,s.box.min.y,s.box.min.z)];
+    const cur=camera.position.distanceTo(controls.target);
+    const d=clamp(fitDistance(dir,c,cs,camera.fov,camera.aspect)*1.5,40,Math.max(cur,40));
+    flyTo(c,dir,d,camera.fov,900);
+    markCustom();
+  }
+  dirty=true;
+}
+const _d=new THREE.Vector3();
+function deselect(){ selected=null; $('sel').hidden=true; applyMaterials(); }
+$('selX').addEventListener('click',deselect);
+
+/* canvas picking */
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(); let down=null;
+canvas.addEventListener('pointerdown',e=>{ down={x:e.clientX,y:e.clientY,t:performance.now()}; hideHint(); });
+canvas.addEventListener('pointerup',e=>{
+  if(!down) return; const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y), dt=performance.now()-down.t; down=null;
+  if(moved>6||dt>500) return;
+  const r=canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ndc,camera);
+  const groups=S.filter(s=>s.text&&s.group.visible&&s.cur>0.5&&s.id!=='rock').map(s=>s.group);
+  const hit=ray.intersectObjects(groups,true)[0];
+  if(hit){ let o=hit.object; while(o&&!o.userData.sid) o=o.parent; if(o){ select(o.userData.sid,false); return; } }
+  if(selected) deselect();
+});
+canvas.addEventListener('wheel',hideHint,{passive:true});
+function hideHint(){ $('hint').classList.add('gone'); }
+function markCustom(){ currentView='custom'; document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed','false')); $('scale').hidden=true; }
+controls.addEventListener('start',()=>{ if(!camTween) markCustom(); });
+controls.addEventListener('change',()=>{ dirty=true; });
+
+/* ---------------------------------------------------------- labels & HUD */
+const placed=[];
+function labelShown(s){
+  if(!(s.cur>0.6)) return false;
+  if(s.id===selected) return true;
+  if(labelMode==='off') return false;
+  if(labelMode==='all') return true;
+  return s.p0===phase;
+}
+const W={w:1,h:1};
+function updateLabels(){
+  placed.length=0;
+  const list=labelDefs.filter(labelShown).sort((a,b)=>((b.id===selected)-(a.id===selected))||(a.order-b.order));
+  labelDefs.forEach(s=>{ if(list.indexOf(s)<0) s.pin.hidden=true; });
+  for(const s of list){
+    _v.copy(s.anchorV).project(camera);
+    if(_v.z>1||_v.z<-1){ s.pin.hidden=true; continue; }
+    const x=(_v.x*0.5+0.5)*W.w, y=(-_v.y*0.5+0.5)*W.h;
+    if(x<-30||x>W.w+30||y<-10||y>W.h+40){ s.pin.hidden=true; continue; }
+    s.pin.hidden=false;
+    s.pin.classList.toggle('is-new',s.p0===phase&&phase>1);
+    s.pin.classList.toggle('is-sel',s.id===selected);
+    s.pin.classList.remove('compact');
+    if(!s.pw) s.pw=s.lab.offsetWidth||90;
+    const r=[x-s.pw/2,y-36,x+s.pw/2,y-12];
+    const clash=r[1]<46||r[0]<2||r[2]>W.w-2||placed.some(q=>!(r[2]+4<q[0]||r[0]-4>q[2]||r[3]+3<q[1]||r[1]-3>q[3]));
+    if(clash&&s.id!==selected){ s.pin.classList.add('compact'); placed.push([x-7,y-7,x+7,y+7]); }
+    else placed.push(r);
+    s.pin.style.transform='translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px)';
+  }
+}
+const northSvg=$('northSvg'), scaleBar=$('scaleBar'), scaleTxt=$('scaleTxt'), _a=new THREE.Vector3(), _b=new THREE.Vector3(), _r=new THREE.Vector3();
+function updateHud(){
+  _a.copy(controls.target).project(camera); _b.copy(controls.target).add(_r.set(10,0,0)).project(camera);
+  const dx=(_b.x-_a.x)*W.w, dy=-(_b.y-_a.y)*W.h;
+  if(Math.hypot(dx,dy)>0.5){ const ang=Math.atan2(dy,dx)*180/Math.PI+90; northSvg.style.transform='rotate('+ang.toFixed(1)+'deg)'; }
+  if(!$('scale').hidden){
+    _r.setFromMatrixColumn(camera.matrixWorld,0);
+    _b.copy(controls.target).addScaledVector(_r,50/3).project(camera);
+    const px=Math.abs(_b.x-_a.x)*W.w/2;
+    let m=50, w=px; const opts=[10,25,50,100,250];
+    for(const o of opts){ const ww=px*o/50; if(ww>=40&&ww<=130){ m=o; w=ww; break; } }
+    scaleBar.style.width=w.toFixed(0)+'px'; scaleTxt.textContent=m+' m';
+  }
+}
+
+/* ---------------------------------------------------------- loop */
+let dirty=true;
+function resize(){
+  const r=stage.getBoundingClientRect(); W.w=Math.max(1,r.width); W.h=Math.max(1,r.height);
+  renderer.setSize(W.w,W.h,false); camera.aspect=W.w/W.h; camera.updateProjectionMatrix(); dirty=true;
+}
+resize();
+setView('model',true);
+new ResizeObserver(()=>{ const wasModel=currentView; resize(); if(wasModel!=='custom'&&!camTween) setView(wasModel,true); }).observe(stage);
+applyMaterials();
+function frame(now){
+  requestAnimationFrame(frame);
+  const a=stepTweens(now), c=stepCam(now);
+  const moved=camTween?false:controls.update();
+  if(a||c||moved||dirty){
+    const dist=camera.position.distanceTo(controls.target), nn=clamp(dist*0.03,0.5,30);
+    if(Math.abs(camera.near-nn)>nn*0.25){ camera.near=nn; camera.far=dist*6+900; camera.updateProjectionMatrix(); }
+    renderer.render(scene,camera); updateLabels(); updateHud(); dirty=false; }
+}
+requestAnimationFrame(frame);
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ labelDefs.forEach(s=>{ s.pw=0; }); dirty=true; });
+
+/* ---------------------------------------------------------- controls UI */
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{ hideHint(); setView(b.dataset.view,false); }));
+$('tNew').addEventListener('click',e=>{ markNew=!markNew; e.currentTarget.setAttribute('aria-pressed',String(markNew)); applyMaterials(); });
+$('tLabels').addEventListener('click',e=>{ labelMode=labelMode==='new'?'all':labelMode==='all'?'off':'new'; e.currentTarget.textContent='Labels: '+labelMode; labelDefs.forEach(s=>{ s.pw=0; }); dirty=true; });
+wirePhaseUI(p=>setPhase(p,true));
+
+/* ---------------------------------------------------------- play */
+let playTimer=null;
+function stopPlay(){ if(playTimer){ clearTimeout(playTimer); playTimer=null; } setPlayIcon(false); }
+function setPlayIcon(on){ $('playIcon').innerHTML=on?'<path d="M4 2.5h3v11H4zM9 2.5h3v11H9z" fill="currentColor"/>':'<path d="M4 2.5L13 8L4 13.5Z" fill="currentColor"/>'; $('play').setAttribute('aria-label',on?'Pause':'Play through the phases'); }
+function playStep(){ if(phase>=4){ stopPlay(); return; } setPhase(phase+1,false); playTimer=setTimeout(playStep,3400); }
+$('play').addEventListener('click',()=>{
+  if(playTimer){ stopPlay(); return; }
+  setPlayIcon(true);
+  if(phase>=4){ setPhase(1,false); playTimer=setTimeout(playStep,2600); } else { playStep(); }
+});
+
+/* ---------------------------------------------------------- helpers shared with no-3D mode */
+function wirePhaseUI(go){
+  document.querySelectorAll('#rail button').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.p)));
+  document.addEventListener('keydown',e=>{
+    if(e.target&&/input|textarea|select/i.test(e.target.tagName)) return;
+    if(e.key==='ArrowRight'&&phase<4){ go(phase+1); }
+    else if(e.key==='ArrowLeft'&&phase>1){ go(phase-1); }
+    else if(e.key==='Escape'&&typeof deselect==='function'&&selected){ deselect(); }
+  });
+}
+function wireUIWithout3D(){
+  wirePhaseUI(p=>{ phase=p; renderBoard(p,true); });
+  $('play').disabled=true;
+}
+})();
+</script>
+
+</body>
+</html>
